@@ -9,6 +9,9 @@ Just a small .sh that displays a menu to choose which local Large Language Model
 3) add to your PATH env
 
 ```{bash }
+# download the file
+wget https://raw.githubusercontent.com/SoaresAlisson/ollama-run/refs/heads/main/ollama-run
+
 # Create a local bin directory (if it doesn't exist):
 mkdir -p ~/.local/bin
 

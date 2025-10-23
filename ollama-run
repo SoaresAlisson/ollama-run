@@ -1,0 +1,23 @@
+#!/bin/bash
+# =================================
+# shellscript made by Alisson Soares
+# https://github.com/SoaresAlisson
+#
+
+# Simple model selector
+echo "Available models:"
+# ollama list | awk 'NR>1 {print NR-2 ") " $1}'
+ollama list | awk 'NR>1 {print NR-2 ") " $1" |size: "$3" " $4 "| modified: "$5" "$6" "$7}'
+
+echo
+echo "Select a model (0-$(($(ollama list | wc -l) - 2))):"
+read choice
+
+model=$(ollama list | awk -v line=$((choice + 2)) 'NR==line {print $1}')
+
+if [ -n "$model" ]; then
+  echo "Running: ollama run $model"
+  ollama run "$model"
+else
+  echo "Invalid selection!"
+fi
