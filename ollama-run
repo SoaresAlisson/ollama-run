@@ -1,19 +1,53 @@
 #!/bin/bash
 # =================================
-# shellscript made by Alisson Soares
+# Shellscript made by Alisson Soares
 # https://github.com/SoaresAlisson
 #
 
+helpText="Ollama run helps you run Ollama models in terminal.
+If server is not running, it starts it in the background.
+It displays a list of available models to be choosen in a menu, instead of typing it (and probably, misspeling it)."
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+# begin ollama server if it not running yet
+if ollamaList=$(ollama list) &>/dev/null; then
+  echo "= Ollama is running ="
+else
+  echo "== Starting ollama server in backgroud =="
+  # ollama serve &
+  # sudo systemctl start ollama
+  ollama serve >/dev/null 2>&1 &
+  # ollamaList=$(ollama list)
+fi
+
+# sleep 0.5
+ollamaList="$(ollama list)"
+# echo ">> $ollamaList <<<<"
+# n_lines=$(echo $ollamaList | grep -z NAME | wc -l)
+n_lines=$(echo "$ollamaList" | tail -n +2 | wc -l)
+# echo $n_lines
+# if [ $n_lines -eq 11 ]; then; echo "12 "; fi
+
 # Simple model selector
+echo "--------------------"
 echo "Available models:"
-# ollama list | awk 'NR>1 {print NR-2 ") " $1}'
-ollama list | awk 'NR>1 {print NR-2 ") " $1" |size: "$3" " $4 "| modified: "$5" "$6" "$7}'
+if [ $n_lines -eq 0 ]; then
+  echo "No models found. Install models (check <https://ollama.com/search>). If you already installed models and none is appearing, try killing ollama daemon (sudo systemctl stop ollama) and runnin it again."
+  # stop
+else
+  # ollama list | awk 'NR>1 {print NR-2 ") " $1}'
+  echo "$ollamaList" | awk 'NR>1 {print NR-2 ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'
+fi
 
 echo
-echo "Select a model (0-$(($(ollama list | wc -l) - 2))):"
+# echo "Select a model (0-$(($(ollama list | wc -l) - 2))):"
+echo "Select a model (0-$(($(echo "$ollamaList" | wc -l) - 2))):"
+echo "(Press ctrl+c to cancel)"
 read choice
 
-model=$(ollama list | awk -v line=$((choice + 2)) 'NR==line {print $1}')
+model=$(echo "$ollamaList" | awk -v line=$((choice + 2)) 'NR==line {print $1}')
 
 if [ -n "$model" ]; then
   echo "Running: ollama run $model"

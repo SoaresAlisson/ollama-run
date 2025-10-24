@@ -1,8 +1,20 @@
 # Ollama-run
 
-Just a small .sh that displays a menu to choose which local Large Language Model (LLM) will be run
+Just a small .sh that displays a menu to choose which local Large Language Model (LLM) will be run at the time.
 
-## Steps
+## Usage
+
+Just run
+
+```{bash}
+ollama-run
+```
+
+It will start ollama server (if not started yet) and display the available models to choose, and run it
+
+![Example](example.png)
+
+## Installation Steps
 
 1) Save it in your computer
 2) give it permission with `chmod +x ollama_run`
@@ -30,5 +42,3 @@ source ~/.bashrc
 # or for zsh 
 source ~/.zshrc
 ```
-
-![Example](example.png)
