@@ -4,31 +4,65 @@
 # https://github.com/SoaresAlisson
 #
 
-helpText="Ollama run helps you run Ollama models in terminal.
-If server is not running, it starts it in the background.
-It displays a list of available models to be choosen in a menu, instead of typing it (and probably, misspeling it)."
-
+# ---Vars
 bold=$(tput bold)
 normal=$(tput sgr0)
+search_term="$1"
 
-# begin ollama server if it not running yet
-if ollamaList=$(ollama list) &>/dev/null; then
+# ---- help
+helpText="Ollama run helps you run Ollama models in the terminal more straightforwardly. 
+If the server is not running, it starts it in the background. It displays a list of available models to choose from in a menu, instead of typing them (and probably misspelling them). It is also possible to filter the model names.
+
+ollama-run          display all models
+ollama-run <term>   filter/grep models by name, case insensitive. E.g. 'ollama-run qwen
+
+"
+
+if [ "$search_term" = "--help" ]; then
+  echo "$helpText"
+  exit 0
+fi
+# --- end help
+
+if ! command -v ollama &>/dev/null; then
+  echo "Error: ollama command not found. See how to install it in <https://ollama.com/download> or search it in the package manager of your operating system"
+  exit 1
+fi
+
+# begin ollama server if it is not running yet
+if model_list=$(ollama list) &>/dev/null; then
   echo "= Ollama is running ="
 else
   echo "== Starting ollama server in backgroud =="
   # ollama serve &
   # sudo systemctl start ollama
   ollama serve >/dev/null 2>&1 &
-  # ollamaList=$(ollama list)
+fi
+
+# grep or not for the model names
+if [ -z "$search_term" ]; then
+  # Show all models
+  model_list="$(ollama list)"
+  n_lines=$(echo $model_list | grep -z NAME | wc -l)
+  # n_lines=$(echo "$model_list" | tail -n +2 | wc -l)
+  # echo "encontrados: $n_lines"
+else
+  # Grep for search term (case insensitive)
+  model_list=$(ollama list | grep -i "$search_term")
+  n_lines=$(echo "$model_list" | wc -l)
+  # echo "encontrados: $n_lines"
+
+  if [ -z "$model_list" ]; then
+    echo "No models found matching: $search_term"
+    exit 1
+  fi
 fi
 
 # sleep 0.5
-ollamaList="$(ollama list)"
-# echo ">> $ollamaList <<<<"
-# n_lines=$(echo $ollamaList | grep -z NAME | wc -l)
-n_lines=$(echo "$ollamaList" | tail -n +2 | wc -l)
+# model_list="$(ollama list)"
+# search_term="qwen"
+# echo ">> $model_list <<<<"
 # echo $n_lines
-# if [ $n_lines -eq 11 ]; then; echo "12 "; fi
 
 # Simple model selector
 echo "--------------------"
@@ -38,16 +72,17 @@ if [ $n_lines -eq 0 ]; then
   # stop
 else
   # ollama list | awk 'NR>1 {print NR-2 ") " $1}'
-  echo "$ollamaList" | awk 'NR>1 {print NR-2 ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'
+  # echo "$model_list" | awk 'NR>1 {print NR-2 ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'
+  echo "$model_list" | awk '{print NR ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'
 fi
 
 echo
 # echo "Select a model (0-$(($(ollama list | wc -l) - 2))):"
-echo "Select a model (0-$(($(echo "$ollamaList" | wc -l) - 2))):"
-echo "(Press ctrl+c to cancel)"
+echo "Select a model (1-$(($(echo "$model_list" | wc -l)))):"
+echo -e "(\033[3mPress ctrl+c to cancel)\033[0m"
 read choice
 
-model=$(echo "$ollamaList" | awk -v line=$((choice + 2)) 'NR==line {print $1}')
+model=$(echo "$model_list" | awk -v line=$((choice)) 'NR==line {print $1}')
 
 if [ -n "$model" ]; then
   echo "Running: ollama run $model"
