@@ -4,17 +4,22 @@
 # https://github.com/SoaresAlisson
 #
 
-# ---Vars
+# --- Vars ---
 bold=$(tput bold)
 normal=$(tput sgr0)
 search_term="$1"
 
-# ---- help
+# ---- Help ---
 helpText="Ollama run helps you run Ollama models in the terminal more straightforwardly. 
 If the server is not running, it starts it in the background. It displays a list of available models to choose from in a menu, instead of typing them (and probably misspelling them). It is also possible to filter the model names.
+Providing the complete name, it will run it, like normal 'ollama run <model-name>'.
+Providing part of the model name, and if only one model exists with that, then this only option will be run.
 
-ollama-run          display all models
-ollama-run <term>   filter/grep models by name, case insensitive. E.g. 'ollama-run qwen
+ollama-run                display all models
+ollama-run <model_name>   run the model, exactly as in 'ollama run <model_name>'
+ollama-run <term>         filter/grep models by name, case insensitive. E.g. 'ollama-run qwen
+ollama-run <regex>        filter/grep models by regex pattern, case insensitive. E.g. 'ollama-run \"[0-7]b\"
+
 
 "
 
@@ -29,36 +34,64 @@ if ! command -v ollama &>/dev/null; then
   exit 1
 fi
 
-# begin ollama server if it is not running yet
+# -- begin ollama server if it is not running yet --
 if model_list=$(ollama list) &>/dev/null; then
   echo "= Ollama is running ="
 else
   echo "== Starting ollama server in backgroud =="
   # ollama serve &
   # sudo systemctl start ollama
-  ollama serve >/dev/null 2>&1 &
+  # ollama serve >/dev/null 2>&1 &
+  ollama serve &>/dev/null &
+  # sleep to give enough time to ollama server to start
+  sleep 0.3
 fi
 
-# grep or not for the model names
+# model_list="$(ollama ls)"
+model_list="$(ollama list | grep -v 'NAME')"
+if [ -z "$model_list" ]; then
+  echo "> model list is empty."
+fi
+# echo "model_list: $model_list"
+model_names=$(echo "$model_list" | tail -n +2 | awk '{print $1}')
+# echo "model_names: \n$model_names"
+if [ -z "$model_names" ]; then
+  echo "> model names is empty."
+fi
+
+# -- run model directly, if complete name is provided as argument --
+is_parameter_in_model_list=$(echo "$model_names" | grep -x "$search_term")
+# if [ -n "$search_term" ] && [ -n "$is_parameter_in_model_list" ]; then
+if [ -n "$is_parameter_in_model_list" ]; then
+  # echo "is_parameter_in_model_list: $is_parameter_in_model_list"
+  echo "Running: $is_parameter_in_model_list"
+  ollama run "$is_parameter_in_model_list"
+  exit 0
+fi
+
+# -- grep or not for the model names --
 if [ -z "$search_term" ]; then
   # Show all models
-  model_list="$(ollama list)"
-  n_lines=$(echo $model_list | grep -z NAME | wc -l)
+  # model_list="$(ollama list)"
+  n_lines=$(echo "$model_list" | grep -v NAME | wc -l)
   # n_lines=$(echo "$model_list" | tail -n +2 | wc -l)
   # echo "encontrados: $n_lines"
 else
-  # Grep for search term (case insensitive)
-  model_list=$(ollama list | grep -i "$search_term")
+  # Grep for search term (case insensitive) --
+  # model_list=$(ollama list | grep -v NAME | grep -i "$search_term")
+  model_list=$(echo "$model_list" | grep -v "NAME" | grep -Ei "$search_term")
   n_lines=$(echo "$model_list" | wc -l)
+  actual_models=$(echo "$model_list" | grep -v 'NAME' | awk '{print $1}' | grep -Ei "$search_term")
   # echo "encontrados: $n_lines"
 
-  if [ -z "$model_list" ]; then
-    echo "No models found matching: $search_term"
+  # if model_list is empty; then
+  # if [ -z "$model_list" ]; then
+  if [ -z "$actual_models" ]; then
+    echo "No local models found matching: $search_term"
     exit 1
   fi
 fi
 
-# sleep 0.5
 # model_list="$(ollama list)"
 # search_term="qwen"
 # echo ">> $model_list <<<<"
@@ -66,27 +99,35 @@ fi
 
 # Simple model selector
 echo "--------------------"
-echo "Available models:"
+# echo "Available models:"
 if [ $n_lines -eq 0 ]; then
-  echo "No models found. Install models (check <https://ollama.com/search>). If you already installed models and none is appearing, try killing ollama daemon (sudo systemctl stop ollama) and runnin it again."
+  echo "No models found. Install models (check <https://ollama.com/search>). If you already installed models and none is appearing, try killing ollama daemon ('sudo systemctl stop ollama' and 'pkill ollama') and then run 'ollama-run' again."
   # stop
+elif [ $n_lines -eq 1 ]; then
+  # echo "running: $model_list | $is_parameter_in_model_list |"
+  actual_model=$(echo "$model_list" | grep -v 'NAME' | awk '{print $1}')
+  echo "Only one model found with \"$search_term\"."
+  echo "Running: $actual_model"
+  ollama run "$actual_model"
+  exit 0
 else
+  echo "Available models:"
   # ollama list | awk 'NR>1 {print NR-2 ") " $1}'
   # echo "$model_list" | awk 'NR>1 {print NR-2 ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'
-  echo "$model_list" | awk '{print NR ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'
-fi
+  echo "$model_list" | grep -v 'NAME' | awk '{print NR ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'
 
-echo
-# echo "Select a model (0-$(($(ollama list | wc -l) - 2))):"
-echo "Select a model (1-$(($(echo "$model_list" | wc -l)))):"
-echo -e "(\033[3mPress ctrl+c to cancel)\033[0m"
-read choice
+  echo
+  # echo "Select a model (0-$(($(ollama list | wc -l) - 2))):"
+  echo "Select a model (1-$(($(echo "$model_list" | wc -l)))):"
+  echo -e "(\033[3mPress ctrl+c to cancel)\033[0m"
+  read choice
 
-model=$(echo "$model_list" | awk -v line=$((choice)) 'NR==line {print $1}')
+  model=$(echo "$model_list" | awk -v line=$((choice)) 'NR==line {print $1}')
 
-if [ -n "$model" ]; then
-  echo "Running: ollama run $model"
-  ollama run "$model"
-else
-  echo "Invalid selection!"
+  if [ -n "$model" ]; then
+    echo "Running: ollama run $model"
+    ollama run "$model"
+  else
+    echo "Invalid selection!"
+  fi
 fi
