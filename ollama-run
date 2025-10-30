@@ -2,7 +2,8 @@
 # =================================
 # Shellscript made by Alisson Soares
 # https://github.com/SoaresAlisson
-#
+# to install, copy this file to ~/.local/bin
+# cp ollama-run ~/.local/bin
 
 # --- Vars ---
 bold=$(tput bold)
@@ -50,7 +51,7 @@ fi
 # model_list="$(ollama ls)"
 model_list="$(ollama list | grep -v 'NAME')"
 if [ -z "$model_list" ]; then
-  echo "> model list is empty."
+  echo "> model list is empty. If you are sure that has models installed, try killing ollama daemon ('sudo systemctl stop ollama' and 'pkill ollama') and then run 'ollama-run' again."
 fi
 # echo "model_list: $model_list"
 model_names=$(echo "$model_list" | tail -n +2 | awk '{print $1}')
@@ -111,6 +112,14 @@ elif [ $n_lines -eq 1 ]; then
   ollama run "$actual_model"
   exit 0
 else
+  ram="$(free -h)"
+  # echo "$ram"
+  ram_total=$(echo "$ram" | grep -i "mem" | awk '{print $2}')
+  ram_used=$(echo "$ram" | grep -i "mem" | awk '{print $3}')
+  ram_free=$(echo "$ram" | grep -i "mem" | awk '{print $7}')
+  echo -e "::: RAM: used: $ram_used | available:\033[1m $ram_free \033[0m / total: $ram_total :::"
+  echo "----------------------------------------------------------"
+
   echo "Available models:"
   # ollama list | awk 'NR>1 {print NR-2 ") " $1}'
   # echo "$model_list" | awk 'NR>1 {print NR-2 ") \033[1m" $1"\033[0m | size: "$3" " $4 " | modified: "$5" "$6" "$7}'

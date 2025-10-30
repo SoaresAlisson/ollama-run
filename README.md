@@ -12,17 +12,21 @@ $ ollama-run qwen3                                                              
 Error: ollama server not responding - could not connect to ollama server, run 'ollama serve' to start it
 == Starting ollama server in backgroud ==
 --------------------
+::: RAM: used: 2,1Gi | available: 9,2Gi  / total: 11Gi :::
+----------------------------------------------------------
 Only one model found with "qwen3".
 Running: qwen3:0.6b
 ⠦ 
 ```
 
-listing all available models:
+Listing all available models:
 
 ```bash
 $ ollama-run                                                                   ✔ 
 = Ollama is running =
 --------------------
+::: RAM: used: 2,1Gi | available: 9,2Gi  / total: 11Gi :::
+----------------------------------------------------------
 Available models:
 1) gemma3:latest | size: 3.3 GB | modified: 3 months ago
 2) granite-embedding:278m | size: 562 MB | modified: 4 months ago
@@ -46,6 +50,8 @@ $ ollama-run qwen
 
 = Ollama is running =
 --------------------
+::: RAM: used: 2,1Gi | available: 9,2Gi  / total: 11Gi :::
+----------------------------------------------------------
 Available models:
 1) qwen3:0.6b | size: 522 MB | modified: 5 months ago
 2) qwen2.5-coder:7b | size: 4.7 GB | modified: 5 months ago
@@ -71,6 +77,8 @@ Providing part of the model name, and if only one model exists with that, then t
 $ ollama-run gaia
 = Ollama is running =
 --------------------
+::: RAM: used: 2,1Gi | available: 9,2Gi  / total: 11Gi :::
+----------------------------------------------------------
 Only one model found with "gaia"
 running: cnmoro/gemma3-gaia-ptbr-4b:q4_k_m
 ⠦ 
